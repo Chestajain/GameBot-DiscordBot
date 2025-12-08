@@ -1,0 +1,10 @@
+# Environment variables (contains your secret token)
+.env
+
+# Python specific files/directories
+__pycache__/
+*.pyc
+venv/
+.mypy_cache/
+.pytest_cache/
+.vscode/

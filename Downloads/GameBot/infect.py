@@ -4,18 +4,18 @@ from discord.ext import commands
 from datetime import timedelta
 import logging
 
-INFECTED_ROLE_NAME = "Infected"
+INFECTED_ROLE_NAME = "Infected" 
 
 log = logging.getLogger(__name__)
 
 class InfectionView(ui.View):
     def __init__(self, initiator: discord.Member, target: discord.Member):
-        super().__init__(timeout=300)
+        super().__init__(timeout=300) 
         self.initiator = initiator
         self.target = target
         self.infect_voters = set()
         self.protect_voters = set()
-        self.message = None
+        self.message = None 
 
     async def on_timeout(self):
         for item in self.children:
@@ -26,9 +26,10 @@ class InfectionView(ui.View):
             except Exception as e:
                 log.error(f"Error editing message on timeout in InfectionView: {e}")
 
+
     async def check_win_condition(self, interaction: discord.Interaction):
         score = len(self.infect_voters) - len(self.protect_voters)
-
+        
         if score >= 5:
             for item in self.children:
                 item.disabled = True
@@ -48,7 +49,7 @@ class InfectionView(ui.View):
             try:
                 await self.target.add_roles(infected_role, reason="Lost the infection vote.")
                 await self.target.timeout(timedelta(minutes=1), reason="Infected by popular vote.")
-
+                
                 success_embed = discord.Embed(
                     title="☣️ Infection Successful! ☣️",
                     description=f"**{self.target.mention} has been infected!**\n\n"
@@ -70,37 +71,40 @@ class InfectionView(ui.View):
             except Exception as e:
                  log.error(f"Unexpected error during infection: {e}")
                  await interaction.message.edit(content="An unexpected error occurred. Check logs.", view=None, embed=None)
-
+            
             self.stop()
+
 
     @ui.button(label="Infect (1000FFcoins)", style=discord.ButtonStyle.red, custom_id="infect_button")
     async def infect_button_callback(self, interaction: discord.Interaction, button: ui.Button):
         voter = interaction.user
+        
         if voter == self.target:
             return await interaction.response.send_message("You cannot vote on your own infection!", ephemeral=True)
-
+            
         if voter in self.protect_voters:
             self.protect_voters.remove(voter)
 
         if voter not in self.infect_voters:
              self.infect_voters.add(voter)
-
+        
         self.children[0].label = f"Infect ({len(self.infect_voters)} FFcoins)"
         self.children[1].label = f"Protect ({len(self.protect_voters)} FFcoins)"
 
         await interaction.response.edit_message(view=self)
-
+        
         await self.check_win_condition(interaction)
 
     @ui.button(label="Protect (1000FFcoins)", style=discord.ButtonStyle.green, custom_id="protect_button")
     async def protect_button_callback(self, interaction: discord.Interaction, button: ui.Button):
         voter = interaction.user
+        
         if voter == self.target:
             return await interaction.response.send_message("You cannot vote on your own infection!", ephemeral=True)
 
         if voter in self.infect_voters:
             self.infect_voters.remove(voter)
-
+            
         if voter not in self.protect_voters:
              self.protect_voters.add(voter)
 
@@ -114,10 +118,11 @@ class InfectionView(ui.View):
 class InfectCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+        
     @app_commands.command(name="infect", description="Attempt to infect a user with a vote.")
     @app_commands.describe(target="The user you want to infect.")
     async def infect(self, interaction: discord.Interaction, target: discord.Member):
+        
         if target == interaction.user:
             await interaction.response.send_message("You can't infect yourself!", ephemeral=True)
             return
@@ -140,7 +145,7 @@ class InfectCog(commands.Cog):
 
         view = InfectionView(initiator=interaction.user, target=target)
         await interaction.response.send_message(embed=embed, view=view)
-
+        
         original_response = await interaction.original_response()
         view.message = original_response
 

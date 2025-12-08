@@ -5,7 +5,7 @@ This is a multi-feature Discord bot that includes an interactive Tic-Tac-Toe gam
 
 ## 🛡️ Required Discord Permissions
 
-For the bot to function correctly, especially the `/freeze` command and its listener, it must have the following permissions in your Discord server:
+For the bot to function correctly, especially the `/freeze` command and the `infect` command, it must have the following permissions in your Discord server:
 
 | Permission | Purpose |
 | :--- | :--- |
@@ -22,6 +22,7 @@ For the bot to function correctly, especially the `/freeze` command and its list
 * `/tictactoe @user`: Start a game of Tic-Tac-Toe with another user.
 * `/freeze @user`: Start a community vote to freeze a member for **2 minutes**.
 * `/unfreeze @user`: (Requires **Manage Roles** permission) Immediately removes the Frozen role from a user. Has a **3 daily uses** cooldown, resetting at GMT midnight.
+* `/infect @user`: Start a community vote to infect a member. Succeeds with a score difference of **5**.
 
 ---
 

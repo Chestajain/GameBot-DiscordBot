@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 load_dotenv() 
 
-BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN") 
+BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN") or os.environ.get("DISCORD_TOKEN") 
 
 intents = discord.Intents.default()
 intents.message_content = True 
@@ -20,8 +20,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 active_challenges = {} 
 active_games = {}      
-
-
 
 class ChallengeView(discord.ui.View):
     def __init__(self, challenger_id, opponent_id, channel_id, challenges: dict, games: dict):
@@ -101,7 +99,7 @@ class ChallengeView(discord.ui.View):
             color=discord.Color.orange()
         )
 
-        image_filename = "expire_challenge.png" 
+        image_filename = "expire_tictactoe.png" 
         script_dir = os.path.dirname(os.path.abspath(__file__))
         image_file_path = os.path.join(script_dir, image_filename)
         
@@ -127,14 +125,13 @@ class ChallengeView(discord.ui.View):
             except Exception as e:
                 logging.error(f"Error updating expired message: {e}")
 
-
 async def load_extensions():
     try:
         await bot.load_extension("freeze")
         logging.info("Successfully loaded freeze.py Cog.")
     except Exception as e:
         logging.error(f"Failed to load freeze.py Cog: {e}")
-    
+        
     try:
         await bot.load_extension("infect")
         logging.info("Successfully loaded infect.py Cog.")
@@ -147,7 +144,6 @@ async def on_ready():
     await load_extensions() 
     await bot.tree.sync()
     print("Slash commands synced.")
-
 
 @bot.tree.command(name="tictactoe", description="Start a game of Tic-Tac-Toe with another user.")
 @discord.app_commands.describe(opponent="The user you want to challenge.")
@@ -192,7 +188,7 @@ async def tictactoe_command(interaction: discord.Interaction, opponent: discord.
         color=discord.Color.dark_purple()
     )
 
-    image_filename = "tictactoe_challenge.png" 
+    image_filename = "tictactoe.png" 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     image_file_path = os.path.join(script_dir, image_filename)
     
@@ -204,7 +200,6 @@ async def tictactoe_command(interaction: discord.Interaction, opponent: discord.
         files_to_send = [image_file]
     else:
         logging.error(f"Image file NOT FOUND: {image_file_path}. Sending embed without image.")
-
 
     message = await interaction.edit_original_response(
         content=f"{opponent.mention}, check the challenge below!", 

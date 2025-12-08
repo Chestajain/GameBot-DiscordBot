@@ -1,12 +1,8 @@
 import discord
-from discord.ext import commands
 import time 
 import os 
 
-# --- Game Logic Class ---
-
 class TicTacToeGame:
-    """Manages the state and logic for a single game of Tic-Tac-Toe."""
     def __init__(self, playerX_id: int, playerO_id: int):
         self.board = ['\u200b'] * 9
         self.current_player = 'X'
@@ -69,14 +65,8 @@ class TicTacToeGame:
         return f"Player {self.current_player}'s turn."
 
 
-# --- Discord View ---
-
 class TicTacToeView(discord.ui.View):
-    """
-    A persistent view that represents the Tic-Tac-Toe board using buttons.
-    """
     def __init__(self, game_session: TicTacToeGame, active_games_ref: dict, message_id: int, *args, **kwargs):
-        # Timeout set to 30 seconds for the move timer
         super().__init__(timeout=30) 
         self.game_session = game_session
         self.active_games = active_games_ref
@@ -112,9 +102,6 @@ class TicTacToeView(discord.ui.View):
             self.add_item(button)
 
     def _create_embed(self, game_over=False) -> tuple[discord.Embed, list[discord.File]]:
-        """
-        Creates the game board embed and returns (Embed, List[File]).
-        """
         files_to_send = []
         
         if game_over:
@@ -131,7 +118,6 @@ class TicTacToeView(discord.ui.View):
             
             embed = discord.Embed(title=title, description=status, color=color)
             
-            # --- WIN IMAGE LOGIC ---
             image_filename = "win_tictactoe.png"
             script_dir = os.path.dirname(os.path.abspath(__file__)) 
             image_file_path = os.path.join(script_dir, image_filename)
@@ -147,7 +133,6 @@ class TicTacToeView(discord.ui.View):
             embed = discord.Embed(title="Tic-Tac-Toe Battle", color=discord.Color.green())
             current_player_id = self.game_session.get_current_player_id()
             
-            # Calculate next timeout time for dynamic display
             timeout_timestamp = int(time.time() + 30)
             
             embed.description = (
@@ -160,78 +145,64 @@ class TicTacToeView(discord.ui.View):
 
     def create_move_callback(self, position: int):
         async def callback(interaction: discord.Interaction):
-            # 1. Validation
             current_player_id = self.game_session.get_current_player_id()
             if interaction.user.id != current_player_id:
                 await interaction.response.send_message("It's not your turn!", ephemeral=True)
                 return
 
-            # 2. Attempt move
             if not self.game_session.make_move(position):
                 await interaction.response.send_message("That's not a valid move!", ephemeral=True)
                 return
 
             self._create_buttons()
 
-            # 3. Check status and cleanup
             if self.game_session.game_over:
-                # Game over message and embed
                 embed, files = self._create_embed(game_over=True)
                 self.stop() 
                 
-                # CRUCIAL MANUAL CLEANUP using MESSAGE ID
                 try:
                     if self.message_id in self.active_games:
                         del self.active_games[self.message_id]
                 except Exception:
                     pass
                 
-                # Update message with final status and embed, including the files
                 await interaction.response.edit_message(content=None, embed=embed, view=self, attachments=files)
             else:
-                # Reset the view timeout for the new player's turn
                 self.stop() 
                 new_view = TicTacToeView(self.game_session, self.active_games, self.message_id)
-                new_view.message = self.message # Pass the message reference
 
                 embed, _ = new_view._create_embed(game_over=False)
                 
-                # Update message with new turn status and embed (no new attachments needed here)
                 await interaction.response.edit_message(content=None, embed=embed, view=new_view)
 
         return callback
 
-    # Handles cleanup when the move timer expires (30 seconds)
     async def on_timeout(self):
-        """Called when the 30-second move timer expires. Declares opponent winner."""
         
         if self.message_id in self.active_games:
-            opponent_id = self.game_session.get_opponent_id()
             
-            # Manually set the game state for the winning condition
+            winner_marker = 'O' if self.game_session.current_player == 'X' else 'X'
+            winner_id = self.game_session.player_map[winner_marker]
+            
             self.game_session.game_over = True
-            self.game_session.winner = 'O' if self.game_session.current_player == 'X' else 'X'
+            self.game_session.winner = winner_marker
             
-            # Cleanup Global State
             try:
                 del self.active_games[self.message_id]
             except Exception:
                 pass
                 
-            # Update the View and Message
-            self._create_buttons() # Disable buttons
+            self._create_buttons()
             
-            # Create the final timeout embed
             embed = discord.Embed(
                 title="⏱️ Time Expired!",
                 description=(
                     f"<@{self.game_session.get_current_player_id()}> failed to move in 30 seconds. Guess running away was their winning strategy.\n"
-                    f"**<@{opponent_id}> wins by forfeit!**"
+                    f"**<@{winner_id}> wins by forfeit!**"
                 ),
                 color=discord.Color.red()
             )
             
-            # Check if the message object is available
             if self.message:
                 try:
                     await self.message.edit(content=None, embed=embed, view=self, attachments=[])

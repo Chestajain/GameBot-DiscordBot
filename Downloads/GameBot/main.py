@@ -6,31 +6,25 @@ from dotenv import load_dotenv
 import logging
 import time 
 
-# Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 load_dotenv() 
 
-# --- Configuration ---
 BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN") 
 
-# Intents must include members and message_content for both tictactoe and freeze
 intents = discord.Intents.default()
 intents.message_content = True 
-intents.members = True # REQUIRED for the Freeze command/listener
+intents.members = True 
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- Global State ---
 active_challenges = {} 
 active_games = {}      
 
 
-# --- Challenge View (Same as original) ---
 
 class ChallengeView(discord.ui.View):
     def __init__(self, challenger_id, opponent_id, channel_id, challenges: dict, games: dict):
-        # Timeout set to 60 seconds (1 minute)
         super().__init__(timeout=60) 
         self.challenger_id = challenger_id
         self.opponent_id = opponent_id
@@ -39,7 +33,6 @@ class ChallengeView(discord.ui.View):
         self.active_games = games           
         self.message = None 
 
-    # --- Accept Button ---
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.success, custom_id="ttt_accept")
     async def accept_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.opponent_id:
@@ -77,7 +70,6 @@ class ChallengeView(discord.ui.View):
 
         await interaction.edit_original_response(content=None, view=board_view, embed=initial_embed, attachments=[])
 
-    # --- Decline Button ---
     @discord.ui.button(label="Decline", style=discord.ButtonStyle.danger, custom_id="ttt_decline")
     async def decline_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id not in [self.challenger_id, self.opponent_id]:
@@ -93,7 +85,6 @@ class ChallengeView(discord.ui.View):
         
         await interaction.response.edit_message(content="The challenge was declined.", view=None, embed=None, attachments=[])
 
-    # --- Challenge Timeout Logic ---
     async def on_timeout(self):
         if self.channel_id in self.active_challenges:
             logging.info(f"Challenge timed out for channel {self.channel_id}. Removing from active_challenges.")
@@ -137,24 +128,26 @@ class ChallengeView(discord.ui.View):
                 logging.error(f"Error updating expired message: {e}")
 
 
-# --- SETUP FUNCTION to load Cogs ---
 async def load_extensions():
     try:
-        # Load the new Freeze command/listener
         await bot.load_extension("freeze")
         logging.info("Successfully loaded freeze.py Cog.")
     except Exception as e:
         logging.error(f"Failed to load freeze.py Cog: {e}")
+    
+    try:
+        await bot.load_extension("infect")
+        logging.info("Successfully loaded infect.py Cog.")
+    except Exception as e:
+        logging.error(f"Failed to load infect.py Cog: {e}")
 
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    # Load Cogs *after* bot is ready
     await load_extensions() 
     await bot.tree.sync()
     print("Slash commands synced.")
 
-# --- Tic-Tac-Toe Slash Command (/tictactoe @user) ---
 
 @bot.tree.command(name="tictactoe", description="Start a game of Tic-Tac-Toe with another user.")
 @discord.app_commands.describe(opponent="The user you want to challenge.")
@@ -188,10 +181,8 @@ async def tictactoe_command(interaction: discord.Interaction, opponent: discord.
         active_games      
     )
     
-    # --- CALCULATE EXPIRATION TIME (UNIX TIMESTAMP) ---
     expiration_timestamp = int(time.time() + 60)
     
-    # --- CREATE THE EMBED ---
     embed = discord.Embed(
         title="⚔️ A New Challenge!",
         description=(
@@ -201,7 +192,6 @@ async def tictactoe_command(interaction: discord.Interaction, opponent: discord.
         color=discord.Color.dark_purple()
     )
 
-    # --- ADD THE IMAGE TO THE EMBED (ROBUST PATH) ---
     image_filename = "tictactoe_challenge.png" 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     image_file_path = os.path.join(script_dir, image_filename)
@@ -216,7 +206,6 @@ async def tictactoe_command(interaction: discord.Interaction, opponent: discord.
         logging.error(f"Image file NOT FOUND: {image_file_path}. Sending embed without image.")
 
 
-    # --- Send the initial challenge message with the embed and view ---
     message = await interaction.edit_original_response(
         content=f"{opponent.mention}, check the challenge below!", 
         embed=embed, 
@@ -225,15 +214,10 @@ async def tictactoe_command(interaction: discord.Interaction, opponent: discord.
     )
     challenge_view.message = message 
 
-# --- Process Commands ---
-# This ensures that both the TicTacToe commands and any future prefix commands work, 
-# while still allowing the Freeze Cog's on_message listener to run.
 @bot.event
 async def on_message(message):
     await bot.process_commands(message)
-    # The FreezeCog's on_message will run automatically after this because it's a listener.
 
-# --- Bot Run ---
 if __name__ == "__main__":
     if not BOT_TOKEN:
         print("!!! ERROR: DISCORD_BOT_TOKEN environment variable is not set. Please create a .env file and set the token. !!!")

@@ -1,9 +1,9 @@
-# 🧊 Discord Bot: Tic-Tac-Toe & Freeze
+# Discord Bot: Tic-Tac-Toe & Freeze
 
 This is a multi-feature Discord bot that includes an interactive Tic-Tac-Toe game and a community-driven "Freeze" punishment system.
 
 
-## 🛡️ Required Discord Permissions
+## Required Discord Permissions
 
 For the bot to function correctly, especially the `/freeze` command and the `infect` command, it must have the following permissions in your Discord server:
 
@@ -17,7 +17,7 @@ For the bot to function correctly, especially the `/freeze` command and the `inf
 
 **Note:** For the role management features to work, the bot's role must be positioned **higher** in the server's role hierarchy than the role it is trying to manage (i.e., higher than the `Frozen` role) and higher than the roles of the members it is trying to time out.
 
-## 🎮 Commands
+## Commands
 
 * `/tictactoe @user`: Start a game of Tic-Tac-Toe with another user.
 * `/freeze @user`: Start a community vote to freeze a member for **2 minutes**.

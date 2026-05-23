@@ -3,7 +3,7 @@
 This is a multi-feature Discord bot that includes an interactive Tic-Tac-Toe game and a community-driven "Freeze" punishment system.
 
 
-## Required Discord Permissions
+## Required Discord Permissions 
 
 For the bot to function correctly, especially the `/freeze` command and the `infect` command, it must have the following permissions in your Discord server:
 
